@@ -15,6 +15,20 @@ API_TOKEN = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(API_TOKEN)
 app = Flask(__name__)
 
+
+# --- 👑 OWNER & PERMISSIONS SETUP ---
+OWNER_ID = 1234567890  # <--- Yahan APNI (Owner) ki Numeric ID dalo
+
+# Teen alag-alag lists banayenge
+admins = set()          # Sirf Admins ki IDs
+allowed_users = set()   # Normal Users ki IDs
+user_details = {}       # Sabka Naam/Username save karne ke liye
+
+# Owner ko by default sab access hai
+allowed_users.add(OWNER_ID)
+admins.add(OWNER_ID) 
+
+
 # Database & State
 link_data = {}
 user_state = {}
@@ -475,12 +489,27 @@ def get_main_menu():
     )
     return markup
 
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    user = message.from_user
+    chat_id = message.chat.id
+
+    # --- SECURITY CHECK ---
+    if chat_id not in allowed_users:
+        bot.reply_to(message, f"⛔ **ACCESS DENIED**\nApka ID: `{chat_id}`\nAdmin ko ye ID bhejo.", parse_mode="Markdown")
+        return
+    
+    # --- DATA SAVE (List ke liye) ---
+    user_details[chat_id] = {
+        'name': user.first_name,
+        'username': user.username if user.username else "None"
+    }
+
+    # --- MAIN MENU ---
+    bot.send_message(chat_id, "🕵️ **YouTube Spy Bot**...", reply_markup=get_main_menu(), parse_mode="Markdown")
 
                                                                                                                                                           
 
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    bot.send_message(message.chat.id, "🕵️ **YouTube Spy Bot**\nSelect a tracking mode:", reply_markup=get_main_menu(), parse_mode="Markdown")
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -515,6 +544,74 @@ def handle_query(call):
     # मेसेज अपडेट करा
     bot.edit_message_text(text, chat_id, call.message.message_id, parse_mode="Markdown")
 
+
+
+# ==========================================
+# 👑 OWNER COMMANDS (Sab kuch kar sakta hai)
+# ==========================================
+
+# 1. Naya Admin banane ke liye (Sirf Owner use karega)
+@bot.message_handler(commands=['addadmin'])
+def make_admin(message):
+    if message.chat.id != OWNER_ID: return # Baaki logo ko ignore karo
+    try:
+        new_admin_id = int(message.text.split()[1])
+        admins.add(new_admin_id)
+        allowed_users.add(new_admin_id) # Admin bot bhi use kar payega
+        bot.reply_to(message, f"👮 **New Admin Added!**\nID: `{new_admin_id}`\nYe ab dusro ko add kar sakta hai.", parse_mode="Markdown")
+    except:
+        bot.reply_to(message, "❌ Use: `/addadmin 123456`", parse_mode="Markdown")
+
+# 2. Admin hatane ke liye (Sirf Owner use karega)
+@bot.message_handler(commands=['removeadmin'])
+def remove_admin(message):
+    if message.chat.id != OWNER_ID: return
+    try:
+        target_id = int(message.text.split()[1])
+        if target_id in admins:
+            admins.remove(target_id)
+            bot.reply_to(message, f"🚫 Admin power removed from `{target_id}`", parse_mode="Markdown")
+        else:
+            bot.reply_to(message, "⚠️ Ye banda Admin nahi hai.")
+    except:
+        bot.reply_to(message, "❌ Use: `/removeadmin 123456`", parse_mode="Markdown")
+
+# 3. Full User List (Sirf Owner dekh sakta hai)
+@bot.message_handler(commands=['users'])
+def list_users(message):
+    if message.chat.id != OWNER_ID: 
+        bot.reply_to(message, "⛔ **Access Denied!**\nSirf Owner list dekh sakta hai.")
+        return
+    
+    msg = "👥 **BOT USERS LIST:**\n\n"
+    for uid in allowed_users:
+        info = user_details.get(uid, {'name': 'Unknown', 'username': 'None'})
+        role = "👑 OWNER" if uid == OWNER_ID else ("👮 ADMIN" if uid in admins else "👤 USER")
+        
+        # Clickable Profile Link
+        link = f"<a href='tg://user?id={uid}'>{info['name']}</a>"
+        msg += f"{role}\nName: {link}\nID: <code>{uid}</code>\nUser: @{info['username']}\n━━━━━━━━━━━━\n"
+    
+    bot.send_message(message.chat.id, msg, parse_mode="HTML")
+
+# ==========================================
+# 👮 ADMIN COMMANDS (Sirf Add kar sakta hai)
+# ==========================================
+
+# 4. User ko Grant Access (Owner + Admin dono use kar sakte hain)
+@bot.message_handler(commands=['grant'])
+def grant_access(message):
+    # Check: Kya ye Owner YA Admin hai?
+    if message.chat.id not in admins:
+        bot.reply_to(message, "⛔ Aap Admin nahi ho.")
+        return
+
+    try:
+        new_id = int(message.text.split()[1])
+        allowed_users.add(new_id)
+        bot.reply_to(message, f"✅ **User Added!**\nID: `{new_id}` ab bot use kar sakta hai.", parse_mode="Markdown")
+    except:
+        bot.reply_to(message, "❌ Use: `/grant 123456`", parse_mode="Markdown")
 
 
 @bot.message_handler(func=lambda message: True)
