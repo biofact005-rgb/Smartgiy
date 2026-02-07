@@ -1,5 +1,4 @@
-  GNU nano 8.7.1                                                                          bot.py                                                                          Modified
-https://61a7b728aa3781a4-49-36-243-57.serveousercontent.com/224934import telebot
+import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from flask import Flask, request, jsonify, render_template_string
 import threading
