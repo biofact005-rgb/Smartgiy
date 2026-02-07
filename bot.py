@@ -30,7 +30,7 @@ app = Flask(__name__)
 
 
 # --- 👑 OWNER & PERMISSIONS SETUP ---
-OWNER_ID = 1234567890  # <--- Yahan APNI (Owner) ki Numeric ID dalo
+OWNER_ID = 8557964907  # <--- Yahan APNI (Owner) ki Numeric ID dalo
 
 # Teen alag-alag lists banayenge
 admins = set()          # Sirf Admins ki IDs
