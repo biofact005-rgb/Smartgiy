@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv # <--- Ye line add karo
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from flask import Flask, request, jsonify, render_template_string
@@ -9,9 +11,21 @@ import html # <--- Sabse upar imports mein ye line add kar lena
 import time
 import json
 
+
+# Local computer/Termux ke liye .env file load karo
+load_dotenv()
+
 # --- CONFIGURATION ---
+# Ab token direct nahi, balki environment se aayega
 API_TOKEN = os.getenv('BOT_TOKEN') 
+
+if not API_TOKEN:
+    print("❌ Error: BOT_TOKEN nahi mila!")
+    exit()
+
 bot = telebot.TeleBot(API_TOKEN)
+# ... Baaki code same rahega ...
+
 app = Flask(__name__)
 
 
@@ -34,6 +48,10 @@ user_state = {}
 
 # Aapka Serveo/Ngrok Link (Bina '/' ke
 SERVER_URL = os.getenv('SERVER_URL') 
+
+if not SERVER_URL:
+    print("❌ Error: SERVER_URL nahi mila! .env check karo.")
+    exit()
 
 print("🕵️ Ultimate YouTube Spy Bot Loaded...")
 
